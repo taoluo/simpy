@@ -163,7 +163,7 @@ class Event:
         self._value = event._value
         self.env.schedule(self)
 
-    def succeed(self, value: Optional[Any] = None) -> 'Event':
+    def succeed(self, value: Optional[Any] = None, *args, **kwargs) -> 'Event':
         """Set the event's value, mark it as successful and schedule it for
         processing by the environment. Returns the event instance.
 
@@ -175,10 +175,10 @@ class Event:
 
         self._ok = True
         self._value = value
-        self.env.schedule(self)
+        self.env.schedule(self,*args, **kwargs)
         return self
 
-    def fail(self, exception: Exception) -> 'Event':
+    def fail(self, exception: Exception, *args, **kwargs) -> 'Event':
         """Set *exception* as the events value, mark it as failed and schedule
         it for processing by the environment. Returns the event instance.
 
@@ -193,7 +193,7 @@ class Event:
             raise ValueError(f'{exception} is not an exception.')
         self._ok = False
         self._value = exception
-        self.env.schedule(self)
+        self.env.schedule(self, *args, **kwargs)
         return self
 
     def __and__(self, other: 'Event') -> 'Condition':
@@ -375,7 +375,7 @@ class Process(Event):
         cases.
 
         """
-        Interruption(self, cause)
+        return Interruption(self, cause)
 
     def _resume(self, event: Event) -> None:  # noqa: C901
         """Resumes the execution of the process with the value of *event*. If
@@ -585,7 +585,7 @@ class Condition(Event):
             if isinstance(event, Condition):
                 event._remove_check_callbacks()
 
-    def _check(self, event: Event) -> None:
+    def _check(self, event: Event,*args,**kwargs) -> None:
         """Check if the condition was already met and schedule the *event* if
         so."""
         if self._value is not PENDING:
@@ -596,7 +596,7 @@ class Condition(Event):
         if not event._ok:
             # Abort if the event has failed.
             event._defused = True
-            self.fail(event._value)
+            self.fail(event._value,priority=URGENT,*args,**kwargs)
         elif self._evaluate(self._events, self._count):
             # The condition has been met. The _build_value() callback will
             # populate the ConditionValue once this condition is processed.

@@ -172,6 +172,18 @@ class Environment:
         heappush(self._queue,
                  (self._now + delay, priority, next(self._eid), event))
 
+    def schedule_at(
+        self,
+        event: Event,
+        priority: EventPriority = NORMAL,
+        sim_time: SimTime = 0,
+    ) -> None:
+        """Schedule an *event* with a given *priority* and a *delay*."""
+        assert sim_time >=self._now
+        heappush(self._queue,
+                 (sim_time, priority, next(self._eid), event))
+
+
     def peek(self) -> SimTime:
         """Get the time of the next scheduled event. Return
         :data:`~simpy.core.Infinity` if there is no further event."""

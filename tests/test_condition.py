@@ -96,10 +96,32 @@ def test_cond_with_error(env):
 
     def process(env):
         try:
-            yield env.process(explode(env, 0)) | env.timeout(1)
+            yield env.any_of([env.process(explode(env, 0)) , env.timeout(1)])
             pytest.fail('The condition should have raised a ValueError')
         except ValueError as err:
             assert err.args == ('Onoes, failed after 0!',)
+
+    env.process(process(env))
+    env.run()
+
+def test_cond_with_error2(env):
+    def explode(env, delay, evt1, evt2):
+        yield env.timeout(delay)
+        evt1.fail(ValueError(f'evt1.fail, failed after {delay}!'))
+        evt2.fail(ValueError(f'evt2.fail, failed after {delay}!'))
+
+        # raise ValueError(f'Onoes, failed after {delay}!')
+
+    def process(env):
+        try:
+            evt1 = env.event()
+            evt2 = env.event()
+            env.process(explode(env, 1,evt1,evt2))
+            yield env.any_of([ evt1, evt2, env.timeout(2)])
+            pytest.fail('The condition should have raised a ValueError')
+        except ValueError as err:
+            print(err.args)
+            # assert err.args == ('Onoes, failed after 0!',)
 
     env.process(process(env))
     env.run()
